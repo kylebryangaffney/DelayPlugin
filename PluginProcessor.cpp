@@ -10,18 +10,15 @@
 #include "PluginEditor.h"
 
 //==============================================================================
-DelayPluginAudioProcessor::DelayPluginAudioProcessor()
-#ifndef JucePlugin_PreferredChannelConfigurations
-     : AudioProcessor (BusesProperties()
-                     #if ! JucePlugin_IsMidiEffect
-                      #if ! JucePlugin_IsSynth
-                       .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
-                      #endif
-                       .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
-                     #endif
-                       )
-#endif
+DelayPluginAudioProcessor::DelayPluginAudioProcessor() :
+    AudioProcessor(
+        BusesProperties()
+        .withInput("Input", juce::AudioChannelSet::stereo(), true)
+        .withOutput("Output", juce::AudioChannelSet::stereo(), true)
+    )
 {
+    auto* param = apvts.getParameter(gainParamID.getParamID());
+    gainParam = dynamic_cast<juce::AudioParameterFloat*>(param);
 }
 
 DelayPluginAudioProcessor::~DelayPluginAudioProcessor()
@@ -103,31 +100,10 @@ void DelayPluginAudioProcessor::releaseResources()
     // spare memory, etc.
 }
 
-#ifndef JucePlugin_PreferredChannelConfigurations
-bool DelayPluginAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
+bool DelayPluginAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
 {
-  #if JucePlugin_IsMidiEffect
-    juce::ignoreUnused (layouts);
-    return true;
-  #else
-    // This is the place where you check if the layout is supported.
-    // In this template code we only support mono or stereo.
-    // Some plugin hosts, such as certain GarageBand versions, will only
-    // load plugins that support stereo bus layouts.
-    if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono()
-     && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
-        return false;
-
-    // This checks if the input layout matches the output layout
-   #if ! JucePlugin_IsSynth
-    if (layouts.getMainOutputChannelSet() != layouts.getMainInputChannelSet())
-        return false;
-   #endif
-
-    return true;
-  #endif
+    return layouts.getMainOutputChannelSet() == juce::AudioChannelSet::stereo();
 }
-#endif
 
 void DelayPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
@@ -150,11 +126,18 @@ void DelayPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
     // the samples and the outer loop is handling the channels.
     // Alternatively, you can process the samples with the channels
     // interleaved by keeping the same state.
+    float gainInDecibels = gainParam->get();
+
+    float gain = juce::Decibels::decibelsToGain(gainInDecibels);
+
     for (int channel = 0; channel < totalNumInputChannels; ++channel)
     {
-        auto* channelData = buffer.getWritePointer (channel);
+        auto* channelData = buffer.getWritePointer(channel);
 
-        // ..do something to the data...
+        for (int sample = 0; sample < buffer.getNumSamples(); ++sample)
+        {
+            channelData[sample] *= gain;
+        }
     }
 }
 
@@ -189,3 +172,16 @@ juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
     return new DelayPluginAudioProcessor();
 }
+
+juce::AudioProcessorValueTreeState::ParameterLayout DelayPluginAudioProcessor::createParameterLayout()
+{
+    juce::AudioProcessorValueTreeState::ParameterLayout layout;
+
+    layout.add(std::make_unique<juce::AudioParameterFloat>(
+        gainParamID,
+        "Output Gain",
+        juce::NormalisableRange<float>{-12.f, 12.f},
+        0.f));
+        return layout;
+}
+
