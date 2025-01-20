@@ -15,10 +15,9 @@ DelayPluginAudioProcessor::DelayPluginAudioProcessor() :
         BusesProperties()
         .withInput("Input", juce::AudioChannelSet::stereo(), true)
         .withOutput("Output", juce::AudioChannelSet::stereo(), true)
-    )
+    ), params(apvts)
 {
-    auto* param = apvts.getParameter(gainParamID.getParamID());
-    gainParam = dynamic_cast<juce::AudioParameterFloat*>(param);
+    // do nothing
 }
 
 DelayPluginAudioProcessor::~DelayPluginAudioProcessor()
@@ -90,8 +89,8 @@ void DelayPluginAudioProcessor::changeProgramName (int index, const juce::String
 //==============================================================================
 void DelayPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
-    // Use this method as the place to do any pre-playback
-    // initialisation that you need..
+    params.prepareToPlay(sampleRate);
+    params.reset();
 }
 
 void DelayPluginAudioProcessor::releaseResources()
@@ -105,39 +104,26 @@ bool DelayPluginAudioProcessor::isBusesLayoutSupported(const BusesLayout& layout
     return layouts.getMainOutputChannelSet() == juce::AudioChannelSet::stereo();
 }
 
-void DelayPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
+void DelayPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
-    auto totalNumInputChannels  = getTotalNumInputChannels();
+    auto totalNumInputChannels = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
 
-    // In case we have more outputs than inputs, this code clears any output
-    // channels that didn't contain input data, (because these aren't
-    // guaranteed to be empty - they may contain garbage).
-    // This is here to avoid people getting screaming feedback
-    // when they first compile a plugin, but obviously you don't need to keep
-    // this code if your algorithm always overwrites all the output channels.
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
-        buffer.clear (i, 0, buffer.getNumSamples());
+        buffer.clear(i, 0, buffer.getNumSamples());
 
-    // This is the place where you'd normally do the guts of your plugin's
-    // audio processing...
-    // Make sure to reset the state if your inner loop is processing
-    // the samples and the outer loop is handling the channels.
-    // Alternatively, you can process the samples with the channels
-    // interleaved by keeping the same state.
-    float gainInDecibels = gainParam->get();
+    params.update();
 
-    float gain = juce::Decibels::decibelsToGain(gainInDecibels);
+    float* channelDataL = buffer.getWritePointer(0);
+    float* channelDataR = buffer.getWritePointer(1);
 
-    for (int channel = 0; channel < totalNumInputChannels; ++channel)
+    for (int sample = 0; sample < buffer.getNumSamples(); ++sample)
     {
-        auto* channelData = buffer.getWritePointer(channel);
+        params.smoothen();
 
-        for (int sample = 0; sample < buffer.getNumSamples(); ++sample)
-        {
-            channelData[sample] *= gain;
-        }
+        channelDataL[sample] *= params.gain;
+        channelDataR[sample] *= params.gain;
     }
 }
 
@@ -155,15 +141,17 @@ juce::AudioProcessorEditor* DelayPluginAudioProcessor::createEditor()
 //==============================================================================
 void DelayPluginAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
-    // You should use this method to store your parameters in the memory block.
-    // You could do that either as raw data, or use the XML or ValueTree classes
-    // as intermediaries to make it easy to save and load complex data.
+    copyXmlToBinary(*apvts.copyState().createXml(), destData);
+    //DBG(apvts.copyState().toXmlString());
 }
 
 void DelayPluginAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
-    // You should use this method to restore your parameters from this memory block,
-    // whose contents will have been created by the getStateInformation() call.
+    std::unique_ptr<juce::XmlElement> xml(getXmlFromBinary(data, sizeInBytes));
+    if (xml.get() != nullptr && xml->hasTagName(apvts.state.getType()))
+    {
+        apvts.replaceState(juce::ValueTree::fromXml(*xml));
+    }
 }
 
 //==============================================================================
@@ -173,7 +161,7 @@ juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
     return new DelayPluginAudioProcessor();
 }
 
-juce::AudioProcessorValueTreeState::ParameterLayout DelayPluginAudioProcessor::createParameterLayout()
+juce::AudioProcessorValueTreeState::ParameterLayout Parameters::createParameterLayout()
 {
     juce::AudioProcessorValueTreeState::ParameterLayout layout;
 
