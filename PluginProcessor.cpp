@@ -91,6 +91,20 @@ void DelayPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
 {
     params.prepareToPlay(sampleRate);
     params.reset();
+
+    juce::dsp::ProcessSpec spec;
+    spec.sampleRate = sampleRate;
+    spec.maximumBlockSize = juce::uint32(samplesPerBlock);
+    spec.numChannels = 2;
+
+    delayLine.prepare(spec);
+
+    double numSamples = Parameters::maxDelayTime / 1000.0 * sampleRate;
+    int maxDelayInSamples = int(std::ceil(numSamples));
+    delayLine.setMaximumDelayInSamples(maxDelayInSamples);
+    delayLine.reset();
+
+    DBG(maxDelayInSamples);
 }
 
 void DelayPluginAudioProcessor::releaseResources()
@@ -115,6 +129,10 @@ void DelayPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, j
 
     params.update();
 
+    float sampleRate = float(getSampleRate());
+    float delayInSamples = params.delayTime / 1000.f * sampleRate;
+    delayLine.setDelay(delayInSamples);
+
     float* channelDataL = buffer.getWritePointer(0);
     float* channelDataR = buffer.getWritePointer(1);
 
@@ -122,8 +140,17 @@ void DelayPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, j
     {
         params.smoothen();
 
-        channelDataL[sample] *= params.gain;
-        channelDataR[sample] *= params.gain;
+        float dryL = channelDataL[sample];
+        float dryR = channelDataR[sample];
+
+        delayLine.pushSample(0, dryL);
+        delayLine.pushSample(1, dryR);
+
+        float wetL = delayLine.popSample(0);
+        float wetR = delayLine.popSample(1);
+
+        channelDataL[sample] = (dryL + wetL)*params.gain;
+        channelDataR[sample] = (dryL + wetR)*params.gain;
     }
 }
 
@@ -161,15 +188,4 @@ juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
     return new DelayPluginAudioProcessor();
 }
 
-juce::AudioProcessorValueTreeState::ParameterLayout Parameters::createParameterLayout()
-{
-    juce::AudioProcessorValueTreeState::ParameterLayout layout;
-
-    layout.add(std::make_unique<juce::AudioParameterFloat>(
-        gainParamID,
-        "Output Gain",
-        juce::NormalisableRange<float>{-12.f, 12.f},
-        0.f));
-        return layout;
-}
 
