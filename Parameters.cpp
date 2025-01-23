@@ -43,17 +43,29 @@ static juce::String stringFromDecibels(float value, int)
     return juce::String(value, 1) + " dB";
 }
 
+static juce::String stringFromPercent(float value, int)
+{
+    return juce::String(int(value)) + " %";
+}
+
 Parameters::Parameters(juce::AudioProcessorValueTreeState& apvts)
 {
     castParameter(apvts, gainParamID, gainParam);
     castParameter(apvts, delayTimeParamID, delayTimeParam);
+    castParameter(apvts, mixParamId, mixParam);
 }
 
 void Parameters::update() noexcept
 {
     gainSmoother.setTargetValue(juce::Decibels::decibelsToGain(gainParam->get()));
 
-    delayTime = delayTimeParam->get();
+    targetDelayTime = delayTimeParam->get();
+    if (delayTime == 0.f)
+    {
+        delayTime = targetDelayTime;
+    }
+
+    mixSmoother.setTargetValue(mixParam->get() * 0.01f);
 
 }
 
@@ -61,18 +73,30 @@ void Parameters::prepareToPlay(double sampleRate) noexcept
 {
     double duration = 0.02;
     gainSmoother.reset(sampleRate, duration);
+    mixSmoother.reset(sampleRate, duration);
+
+    coeff = 1.f - std::exp(-1.f / (0.2f * float(sampleRate)));
 }
 
 void Parameters::reset() noexcept
 {
     delayTime = 0.f;
+
     gain = 0.f;
     gainSmoother.setCurrentAndTargetValue(juce::Decibels::decibelsToGain(gainParam->get()));
+
+    mix = 1.f;
+    mixSmoother.setCurrentAndTargetValue(mixParam->get() * 0.01f);
+
 }
 
 void Parameters::smoothen() noexcept
 {
     gain = gainSmoother.getNextValue();
+
+    delayTime += (targetDelayTime - delayTime) * coeff;
+
+    mix = mixSmoother.getNextValue();
 }
 
 juce::AudioProcessorValueTreeState::ParameterLayout Parameters::createParameterLayout()
@@ -82,7 +106,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout Parameters::createParameterL
     layout.add(std::make_unique<juce::AudioParameterFloat>(
         gainParamID,
         "Output Gain",
-        juce::NormalisableRange<float>{-12.f, 12.f},
+        juce::NormalisableRange<float>{-18.f, 12.f},
         0.f,
         juce::AudioParameterFloatAttributes().withStringFromValueFunction(stringFromDecibels)
     ));
@@ -93,6 +117,14 @@ juce::AudioProcessorValueTreeState::ParameterLayout Parameters::createParameterL
         juce::NormalisableRange<float>{minDelayTime, maxDelayTime, 0.001f, 0.25f},
         100.f, 
         juce::AudioParameterFloatAttributes().withStringFromValueFunction(stringFromMilliseconds)
+    ));
+
+    layout.add(std::make_unique<juce::AudioParameterFloat>(
+        mixParamId,
+        "Mix",
+        juce::NormalisableRange<float>(0.f, 100.f, 1.f),
+        100.f,
+        juce::AudioParameterFloatAttributes().withStringFromValueFunction(stringFromPercent)
     ));
 
     return layout;
