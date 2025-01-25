@@ -18,20 +18,15 @@
 class RotaryKnob : public juce::Component
 {
 public:
-    RotaryKnob(const juce::String& text,
-        juce::AudioProcessorValueTreeState& apvts,
-        const juce::ParameterID& parameterID);
+    RotaryKnob();
     ~RotaryKnob() override;
 
     void resized() override;
 
-    juce::AudioProcessorValueTreeState::SliderAttachment attachment;
-
-
-private:
     juce::Slider slider;
     juce::Label label;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(RotaryKnob)
+private:
+     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(RotaryKnob)
 };
 
