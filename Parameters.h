@@ -14,15 +14,15 @@
 
 const juce::ParameterID gainParamID{ "gain", 1 };
 const juce::ParameterID delayTimeParamID{ "delayTime", 1 };
-const juce::ParameterID mixParamId{ "mix", 1 };
+const juce::ParameterID mixParamID{ "mix", 1 };
 
 
 class Parameters
 {
 public:
-	Parameters(juce::AudioProcessorValueTreeState& apvts);
+    Parameters(juce::AudioProcessorValueTreeState& apvts);
 
-	static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
+    static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
 
     void update() noexcept;
     void prepareToPlay(double sampleRate) noexcept;
@@ -39,15 +39,14 @@ public:
 
 
 private:
-
-
     juce::AudioParameterFloat* gainParam;
     juce::LinearSmoothedValue<float> gainSmoother;
+
     juce::AudioParameterFloat* delayTimeParam;
 
     juce::AudioParameterFloat* mixParam;
     juce::LinearSmoothedValue<float> mixSmoother;
 
     float targetDelayTime = 0.f;
-    float coeff = 0.f; // one-pole smoothing
+    float coeff = 0.f;
 };

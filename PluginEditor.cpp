@@ -10,11 +10,10 @@
 #include "PluginEditor.h"
 
 //==============================================================================
-DelayPluginAudioProcessorEditor::DelayPluginAudioProcessorEditor (DelayPluginAudioProcessor& p)
-    : AudioProcessorEditor (&p), audioProcessor (p)
+DelayPluginAudioProcessorEditor::DelayPluginAudioProcessorEditor(DelayPluginAudioProcessor& p)
+    : AudioProcessorEditor(&p), audioProcessor(p)
 {
-    addAndMakeVisible(gainKnob);
-    setSize (500, 330);
+    setSize(400, 300);
 }
 
 DelayPluginAudioProcessorEditor::~DelayPluginAudioProcessorEditor()
@@ -22,13 +21,18 @@ DelayPluginAudioProcessorEditor::~DelayPluginAudioProcessorEditor()
 }
 
 //==============================================================================
-void DelayPluginAudioProcessorEditor::paint (juce::Graphics& g)
+void DelayPluginAudioProcessorEditor::paint(juce::Graphics& g)
 {
-    // (Our component is opaque, so we must completely fill the background with a solid colour)
-    g.fillAll (juce::Colours::darkgrey);
+    g.fillAll(juce::Colours::darkgrey);
+
+    g.setColour(juce::Colours::dodgerblue);
+    g.setFont(juce::FontOptions(40.f));
+    g.drawFittedText("A Delay for Dark Times",
+        getLocalBounds(), juce::Justification::centred, 1);
 }
 
 void DelayPluginAudioProcessorEditor::resized()
 {
-    gainKnob.setTopLeftPosition(215, 120);
+    // This is generally where you'll want to lay out the positions of any
+    // subcomponents in your editor..
 }

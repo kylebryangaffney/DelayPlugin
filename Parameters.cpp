@@ -23,7 +23,7 @@ static juce::String stringFromMilliseconds(float value, int)
     if (value < 10.f)
     {
         return juce::String(value, 2) + " ms";
-    } 
+    }
     else if (value < 100.f)
     {
         return juce::String(value, 1) + " ms";
@@ -52,12 +52,13 @@ Parameters::Parameters(juce::AudioProcessorValueTreeState& apvts)
 {
     castParameter(apvts, gainParamID, gainParam);
     castParameter(apvts, delayTimeParamID, delayTimeParam);
-    castParameter(apvts, mixParamId, mixParam);
+    castParameter(apvts, mixParamID, mixParam);
 }
 
 void Parameters::update() noexcept
 {
     gainSmoother.setTargetValue(juce::Decibels::decibelsToGain(gainParam->get()));
+    mixSmoother.setCurrentAndTargetValue(mixParam->get() * 0.01f);
 
     targetDelayTime = delayTimeParam->get();
     if (delayTime == 0.f)
@@ -65,37 +66,32 @@ void Parameters::update() noexcept
         delayTime = targetDelayTime;
     }
 
-    mixSmoother.setTargetValue(mixParam->get() * 0.01f);
-
 }
 
 void Parameters::prepareToPlay(double sampleRate) noexcept
 {
     double duration = 0.02;
     gainSmoother.reset(sampleRate, duration);
-    mixSmoother.reset(sampleRate, duration);
 
     coeff = 1.f - std::exp(-1.f / (0.2f * float(sampleRate)));
+
+    mixSmoother.reset(sampleRate, duration);
 }
 
 void Parameters::reset() noexcept
 {
     delayTime = 0.f;
-
     gain = 0.f;
     gainSmoother.setCurrentAndTargetValue(juce::Decibels::decibelsToGain(gainParam->get()));
 
     mix = 1.f;
     mixSmoother.setCurrentAndTargetValue(mixParam->get() * 0.01f);
-
 }
 
 void Parameters::smoothen() noexcept
 {
     gain = gainSmoother.getNextValue();
-
     delayTime += (targetDelayTime - delayTime) * coeff;
-
     mix = mixSmoother.getNextValue();
 }
 
@@ -115,12 +111,13 @@ juce::AudioProcessorValueTreeState::ParameterLayout Parameters::createParameterL
         delayTimeParamID,
         "Delay Time",
         juce::NormalisableRange<float>{minDelayTime, maxDelayTime, 0.001f, 0.25f},
-        100.f, 
+        100.f,
         juce::AudioParameterFloatAttributes().withStringFromValueFunction(stringFromMilliseconds)
     ));
 
+
     layout.add(std::make_unique<juce::AudioParameterFloat>(
-        mixParamId,
+        mixParamID,
         "Mix",
         juce::NormalisableRange<float>(0.f, 100.f, 1.f),
         100.f,

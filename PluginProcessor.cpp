@@ -32,29 +32,29 @@ const juce::String DelayPluginAudioProcessor::getName() const
 
 bool DelayPluginAudioProcessor::acceptsMidi() const
 {
-   #if JucePlugin_WantsMidiInput
+#if JucePlugin_WantsMidiInput
     return true;
-   #else
+#else
     return false;
-   #endif
+#endif
 }
 
 bool DelayPluginAudioProcessor::producesMidi() const
 {
-   #if JucePlugin_ProducesMidiOutput
+#if JucePlugin_ProducesMidiOutput
     return true;
-   #else
+#else
     return false;
-   #endif
+#endif
 }
 
 bool DelayPluginAudioProcessor::isMidiEffect() const
 {
-   #if JucePlugin_IsMidiEffect
+#if JucePlugin_IsMidiEffect
     return true;
-   #else
+#else
     return false;
-   #endif
+#endif
 }
 
 double DelayPluginAudioProcessor::getTailLengthSeconds() const
@@ -65,7 +65,7 @@ double DelayPluginAudioProcessor::getTailLengthSeconds() const
 int DelayPluginAudioProcessor::getNumPrograms()
 {
     return 1;   // NB: some hosts don't cope very well if you tell them there are 0 programs,
-                // so this should be at least 1, even if you're not really implementing programs.
+    // so this should be at least 1, even if you're not really implementing programs.
 }
 
 int DelayPluginAudioProcessor::getCurrentProgram()
@@ -73,21 +73,21 @@ int DelayPluginAudioProcessor::getCurrentProgram()
     return 0;
 }
 
-void DelayPluginAudioProcessor::setCurrentProgram (int index)
+void DelayPluginAudioProcessor::setCurrentProgram(int index)
 {
 }
 
-const juce::String DelayPluginAudioProcessor::getProgramName (int index)
+const juce::String DelayPluginAudioProcessor::getProgramName(int index)
 {
     return {};
 }
 
-void DelayPluginAudioProcessor::changeProgramName (int index, const juce::String& newName)
+void DelayPluginAudioProcessor::changeProgramName(int index, const juce::String& newName)
 {
 }
 
 //==============================================================================
-void DelayPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
+void DelayPluginAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
 {
     params.prepareToPlay(sampleRate);
     params.reset();
@@ -137,6 +137,7 @@ void DelayPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, j
     for (int sample = 0; sample < buffer.getNumSamples(); ++sample)
     {
         params.smoothen();
+
         float delayInSamples = params.delayTime / 1000.f * sampleRate;
         delayLine.setDelay(delayInSamples);
 
@@ -150,11 +151,13 @@ void DelayPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, j
         float wetR = delayLine.popSample(1);
 
         float mixL = dryL * (1.f - params.mix) + wetL * params.mix;
-        float mixR = dryR * (1.f - params.mix) + wetR * params.mix;
+        float mixR = dryR * (1.f - params.mix) * wetR * params.mix;
 
         channelDataL[sample] = mixL * params.gain;
         channelDataR[sample] = mixR * params.gain;
     }
+    
+
 }
 
 //==============================================================================
@@ -165,17 +168,17 @@ bool DelayPluginAudioProcessor::hasEditor() const
 
 juce::AudioProcessorEditor* DelayPluginAudioProcessor::createEditor()
 {
-    return new DelayPluginAudioProcessorEditor (*this);
+    return new DelayPluginAudioProcessorEditor(*this);
 }
 
 //==============================================================================
-void DelayPluginAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
+void DelayPluginAudioProcessor::getStateInformation(juce::MemoryBlock& destData)
 {
     copyXmlToBinary(*apvts.copyState().createXml(), destData);
     //DBG(apvts.copyState().toXmlString());
 }
 
-void DelayPluginAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
+void DelayPluginAudioProcessor::setStateInformation(const void* data, int sizeInBytes)
 {
     std::unique_ptr<juce::XmlElement> xml(getXmlFromBinary(data, sizeInBytes));
     if (xml.get() != nullptr && xml->hasTagName(apvts.state.getType()))
@@ -190,5 +193,3 @@ juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
     return new DelayPluginAudioProcessor();
 }
-
-
