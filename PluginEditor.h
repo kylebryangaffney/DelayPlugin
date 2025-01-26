@@ -9,6 +9,7 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include "LookAndFeel.h"
 #include "PluginProcessor.h"
 #include "Parameters.h"
 #include "RotaryKnob.h"
