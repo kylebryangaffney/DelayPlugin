@@ -29,6 +29,10 @@ public:
 private:
     DelayPluginAudioProcessor& audioProcessor;
     RotaryKnob gainKnob{ "Output Gain", audioProcessor.apvts, gainParamID };
+    RotaryKnob mixKnob{ "Mix", audioProcessor.apvts, mixParamID };
+    RotaryKnob delayTimeKnob{ "Time", audioProcessor.apvts, delayTimeParamID };
+
+    juce::GroupComponent delayGroup, feedbackGroup, outputGroup;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DelayPluginAudioProcessorEditor)
 };
