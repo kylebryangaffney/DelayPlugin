@@ -74,4 +74,29 @@ void RotaryKnobLookAndFeel::drawRotarySlider(
     dialPath.lineTo(dialEnd);
     g.setColour(Colors::Knob::dial);
     g.strokePath(dialPath, strokeType);
+
+    setColour(juce::Slider::rotarySliderFillColourId, Colors::Knob::trackActive);
+
+    if (slider.isEnabled())
+    {
+        float fromAngle = rotaryStartAngle;
+        if (slider.getProperties()["drawFromMiddle"])
+        {
+            fromAngle += (rotaryEndAngle - rotaryStartAngle) / 2.f;
+        }
+
+        juce::Path valueArc;
+        valueArc.addCentredArc(center.x,
+                               center.y,
+                               arcRadius,
+                               arcRadius,
+                               0.f,
+                               fromAngle,
+                               toAngle,
+                               true);
+        g.setColour(slider.findColour(juce::Slider::rotarySliderFillColourId));
+        g.strokePath(valueArc, strokeType);
+
+
+    }
 }

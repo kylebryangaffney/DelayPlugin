@@ -31,6 +31,9 @@ DelayPluginAudioProcessorEditor::DelayPluginAudioProcessorEditor(DelayPluginAudi
     outputGroup.addAndMakeVisible(mixKnob);
     addAndMakeVisible(outputGroup);
 
+    gainKnob.slider.setColour(juce::Slider::rotarySliderFillColourId,
+        juce::Colours::green);
+
 
     setSize(500, 330);
 }
