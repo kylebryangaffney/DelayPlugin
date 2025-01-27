@@ -35,7 +35,7 @@ RotaryKnob::RotaryKnob(const juce::String& text,
     setLookAndFeel(RotaryKnobLookAndFeel::get());
 
     float pi = juce::MathConstants<float>::pi;
-    slider.setRotaryParameters(1.25f * pi, 2.45f * pi, true);
+    slider.setRotaryParameters(1.25f * pi, 2.75f * pi, true);
 
     setSize(70, 110);
 
