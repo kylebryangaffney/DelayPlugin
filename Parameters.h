@@ -50,6 +50,5 @@ private:
     float targetDelayTime = 0.f;
     float coeff = 0.f;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(Parameters)
 
 };

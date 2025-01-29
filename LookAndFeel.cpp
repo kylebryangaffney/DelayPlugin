@@ -25,6 +25,7 @@ RotaryKnobLookAndFeel::RotaryKnobLookAndFeel()
 {
     setColour(juce::Label::textColourId, Colors::Knob::label);
     setColour(juce::Slider::textBoxTextColourId, Colors::Knob::label);
+    setColour(juce::Slider::textBoxOutlineColourId, juce::Colours::transparentBlack);
 }
 
 juce::Font RotaryKnobLookAndFeel::getLabelFont([[maybe_unused]] juce::Label& label)
@@ -115,4 +116,15 @@ void RotaryKnobLookAndFeel::drawRotarySlider(
 
 
     }
+}
+
+
+MainLookAndFeel::MainLookAndFeel()
+{
+    setColour(juce::GroupComponent::textColourId, Colors::Group::label);
+    setColour(juce::GroupComponent::outlineColourId, Colors::Group::outline);
+}
+juce::Font MainLookAndFeel::getLabelFont([[maybe_unused]] juce::Label& label)
+{
+    return Fonts::getFont();
 }
